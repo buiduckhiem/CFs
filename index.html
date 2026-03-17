@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Hệ thống Confession Tự động</title>
+    <title>Hệ thống duyệt Confession Tự động</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; }
         .container { max-width: 600px; margin: auto; }
@@ -19,41 +19,42 @@
     </div>
 
     <script>
-        const SHEET_ID = '1oWo_xhG6BaKr3xxLabbJO798jjCJelITh5mAwOnbR8A';
-        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+        // Dùng ID đã xác định từ ảnh của bạn
+const SHEET_ID = '1oWo_xhG6BaKr3xxLabbJO798jjCJelITh5mAwOnbR8A'; 
+const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
-        fetch(url)
-            .then(res => res.text())
-            .then(text => {
-                const json = JSON.parse(text.substr(47).slice(0, -2));
-                const rows = json.table.rows;
-                let htmlOutput = '';
-                
-                // Lấy số thứ tự gốc từ ô N2 (Dòng 2, Cột 13 trong mảng JSON)
-                let startNum = rows[0].c[13] ? parseInt(rows[0].c[13].v) : 4259;
+fetch(url)
+  .then(res => res.text())
+  .then(text => {
+    // Loại bỏ phần thừa của Google để lấy JSON chuẩn
+    const json = JSON.parse(text.substr(47).slice(0, -2));
+    const rows = json.table.rows;
+    let htmlOutput = '';
+    
+    // Lấy số thứ tự khởi đầu từ ô N2 (Cột N là index 13)
+    let currentNum = rows[0].c[13] ? parseInt(rows[0].c[13].v) : 4259;
 
-                // Duyệt qua các dòng để tìm bài được "Duyệt"
-                rows.forEach((row, index) => {
-                    const status = row.c[0] ? row.c[0].v : ''; // Cột A
-                    const content = row.c[3] ? row.c[3].v : ''; // Cột D
+    rows.forEach((row) => {
+      const duyetStatus = row.c[0] ? row.c[0].v : ''; // Cột A
+      const noiDung = row.c[3] ? row.c[3].v : '';     // Cột D
+      const dangStatus = row.c[12] ? row.c[12].v : ''; // Cột M (Index 12)
 
-                    if (status === 'Duyệt') {
-                        htmlOutput += `
-                            <div class="cfs-card">
-                                <span class="cfs-header">#cfs${startNum}</span>
-                                <div class="cfs-content">${content}</div>
-                                <div class="divider"></div>
-                                <small style="color: gray;">Trạng thái: Đã kiểm duyệt bởi AI</small>
-                            </div>`;
-                        startNum++;
-                    }
-                });
+      // Chỉ hiển thị bài đã Duyệt và chưa Đã đăng
+      if (duyetStatus === 'Duyệt' && !dangStatus) {
+        htmlOutput += `
+          <div style="background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #1877f2;">
+            <b style="color: #1877f2;">#cfs${currentNum}</b>
+            <p style="white-space: pre-wrap;">${noiDung}</p>
+          </div>`;
+        currentNum++;
+      }
+    });
 
-                document.getElementById('display-area').innerHTML = htmlOutput || 'Hiện chưa có bài viết nào được duyệt.';
-            })
-            .catch(err => {
-                document.getElementById('display-area').innerHTML = 'Lỗi kết nối dữ liệu.';
-            });
+    document.getElementById('display-area').innerHTML = htmlOutput || 'Hiện chưa có bài mới nào được duyệt.';
+  })
+  .catch(err => {
+    document.getElementById('display-area').innerHTML = 'Vẫn lỗi kết nối. Hãy kiểm tra bước "Xuất bản lên web".';
+  });
     </script>
 </body>
 </html>
