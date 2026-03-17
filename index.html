@@ -20,41 +20,52 @@
 
     <script>
         // Dùng ID đã xác định từ ảnh của bạn
-const SHEET_ID = '1oWo_xhG6BaKr3xxLabbJO798jjCJelITh5mAwOnbR8A'; 
-const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+const SHEET_ID = '1oWo_xhG6BaKr3xxLabbJO798jjCJelITh5mAwOnbR8A';
+const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&range=A:N`;
 
-fetch(url)
-  .then(res => res.text())
-  .then(text => {
-    // Loại bỏ phần thừa của Google để lấy JSON chuẩn
-    const json = JSON.parse(text.substr(47).slice(0, -2));
-    const rows = json.table.rows;
-    let htmlOutput = '';
-    
-    // Lấy số thứ tự khởi đầu từ ô N2 (Cột N là index 13)
-    let currentNum = rows[0].c[13] ? parseInt(rows[0].c[13].v) : 4259;
+async function loadData() {
+    try {
+        const res = await fetch(url);
+        const text = await res.text();
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const rows = json.table.rows;
+        let htmlOutput = '';
+        let count = 0;
 
-    rows.forEach((row) => {
-      const duyetStatus = row.c[0] ? row.c[0].v : ''; // Cột A
-      const noiDung = row.c[3] ? row.c[3].v : '';     // Cột D
-      const dangStatus = row.c[12] ? row.c[12].v : ''; // Cột M (Index 12)
+        // Duyệt qua toàn bộ danh sách
+        rows.forEach((row) => {
+            const duyetStatus = row.c[0] ? row.c[0].v : '';    // Cột A
+            const noiDung = row.c[3] ? row.c[3].v : '';        // Cột D
+            const dangStatus = row.c[12] ? row.c[12].v : '';   // Cột M (Index 12)
+            const cfsNumber = row.c[13] ? row.c[13].v : '';    // Cột N (Index 13)
 
-      // Chỉ hiển thị bài đã Duyệt và chưa Đã đăng
-      if (duyetStatus === 'Duyệt' && !dangStatus) {
-        htmlOutput += `
-          <div style="background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #1877f2;">
-            <b style="color: #1877f2;">#cfs${currentNum}</b>
-            <p style="white-space: pre-wrap;">${noiDung}</p>
-          </div>`;
-        currentNum++;
-      }
-    });
+            // ĐIỀU KIỆN: Đã Duyệt + Cột M trống + Đã có số ở cột N
+            if (duyetStatus === 'Duyệt' && (dangStatus === '' || dangStatus === null) && cfsNumber) {
+                htmlOutput += `
+                    <div class="cfs-item">
+                        <div class="cfs-id">#Cfs${cfsNumber}</div>
+                        <div class="cfs-text">${noiDung}</div>
+                        <div class="divider">______</div>
+                    </div>`;
+                count++;
+            }
+        });
 
-    document.getElementById('display-area').innerHTML = htmlOutput || 'Hiện chưa có bài mới nào được duyệt.';
-  })
-  .catch(err => {
-    document.getElementById('display-area').innerHTML = 'Vẫn lỗi kết nối. Hãy kiểm tra bước "Xuất bản lên web".';
-  });
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('display-area').innerHTML = htmlOutput || '<p style="text-align:center">🎉 Tuyệt vời! Không còn bài nào đang chờ đăng.</p>';
+        
+        // Cập nhật tiêu đề để bạn biết có bao nhiêu bài đang đợi
+        if(count > 0) {
+            document.querySelector('h2').innerText = `Đang đợi đăng (${count} bài)`;
+        }
+    } catch (err) {
+        console.error(err);
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('display-area').innerHTML = '<p style="color:red">Lỗi kết nối dữ liệu.</p>';
+    }
+}
+
+loadData();
     </script>
 </body>
 </html>
