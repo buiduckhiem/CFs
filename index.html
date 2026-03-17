@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hệ thống Confession Tự động</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        .cfs-card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #1877f2; }
+        .cfs-header { font-weight: bold; color: #1877f2; margin-bottom: 10px; display: block; }
+        .cfs-content { white-space: pre-wrap; line-height: 1.6; color: #1c1e21; }
+        .divider { border-top: 1px solid #ddd; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 style="text-align: center;">Bùi Thị Xuân QN Confessions</h2>
+        <div id="display-area">Đang tải dữ liệu từ hệ thống...</div>
+    </div>
+
+    <script>
+        const SHEET_ID = 'THAY_ID_BANG_TINH_CUA_BAN_VÀO_ĐÂY';
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+        fetch(url)
+            .then(res => res.text())
+            .then(text => {
+                const json = JSON.parse(text.substr(47).slice(0, -2));
+                const rows = json.table.rows;
+                let htmlOutput = '';
+                
+                // Lấy số thứ tự gốc từ ô N2 (Dòng 2, Cột 13 trong mảng JSON)
+                let startNum = rows[0].c[13] ? parseInt(rows[0].c[13].v) : 4259;
+
+                // Duyệt qua các dòng để tìm bài được "Duyệt"
+                rows.forEach((row, index) => {
+                    const status = row.c[0] ? row.c[0].v : ''; // Cột A
+                    const content = row.c[3] ? row.c[3].v : ''; // Cột D
+
+                    if (status === 'Duyệt') {
+                        htmlOutput += `
+                            <div class="cfs-card">
+                                <span class="cfs-header">#cfs${startNum}</span>
+                                <div class="cfs-content">${content}</div>
+                                <div class="divider"></div>
+                                <small style="color: gray;">Trạng thái: Đã kiểm duyệt bởi AI</small>
+                            </div>`;
+                        startNum++;
+                    }
+                });
+
+                document.getElementById('display-area').innerHTML = htmlOutput || 'Hiện chưa có bài viết nào được duyệt.';
+            })
+            .catch(err => {
+                document.getElementById('display-area').innerHTML = 'Lỗi kết nối dữ liệu.';
+            });
+    </script>
+</body>
+</html>
